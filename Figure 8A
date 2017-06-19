@@ -1,0 +1,46 @@
+#Principal Component Analysis of memory and secondary effector#MYL
+##Figure 8A: PCA of acute memory, latent memory, chronic memory, acute primed, latent primed and chronic primed
+#A-H : cluster 1-8 from surface stain (CD27, CD127, CD62L, KLRG1)
+#I-N : cluster 9-14 from transcription stain (EOMES, T-BET, pSTAT3, BLIMP1, BCL6)
+#O-S : cluster 15-19 from cytokine stain (IFNg, TNFa, IL-2, CCL3)
+
+#install packages
+library(ggplot2)
+library(psych)
+library(rgl) #3d scatter plot
+
+#import the data
+setwd("")
+ALL <- read.csv(file="PCA_mem_and_effector.csv", header= TRUE)
+
+#convert the numbers to percentages
+ALL[,1:19] <- ALL[,1:19] / 100
+ALL_no_label <- ALL[,-ncol(ALL)] #remove the infection label
+
+#PCA using psych package
+fa.parallel(ALL_no_label,fa="pc",n.iter=100,show.legend = FALSE,
+            main="screen plot with parallel analysis") #determine the number of PCs
+
+ALL_PCA<-principal(ALL_no_label,3) #PCA with 3 PCs
+print(ALL_PCA) #print the result
+ALL_pred <- as.data.frame(ALL_PCA$scores)##extract the converted value 
+ALL_pred <- cbind(ALL_pred, infection = ALL$infection) #add back the infection label
+colnames(ALL_pred) <- c("PC1", "PC2","PC3", "infection")
+
+
+##Plot the first 3 PCs using rgl
+#set the colors for different infections
+color <- c(rep("gray92",11),rep("gray54",6),rep("black",6),rep("brown",3),rep("lightskyblue",5),rep("dodgerblue1",5),rep("navy",3))
+ALL_pred <- cbind(ALL_pred,color=color) #add color to the dataset
+plot3d(ALL_pred$PC1,ALL_pred$PC2,ALL_pred$PC3,size=15,axis=FALSE,col=ALL_pred$color,
+       xlab="PC1 30%",ylab="PC2 29%",zlab="PC3 21%") #3D scatter plot
+rgl.snapshot("PCA_ALL_1.png",fmt="png") #screenshot(Figure 7)
+
+#create a blank plot
+plot(1, type="n", axes=F, xlab="", ylab="")
+#create a legend on the plot
+legend("topleft",pch=19, legend=c("Acute memory","Latent memory", "Chronic memory",
+                                  "Acute primed","Latent primed","Chronic primed","Naive"), pt.cex=2,
+       col=c("gray92", "gray54", "black","lightskyblue","dodgerblue1","navy","brown"))
+
+

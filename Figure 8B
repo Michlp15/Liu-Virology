@@ -1,0 +1,45 @@
+#Principal Component Analysis of memory#MYL
+##Figure 8B: PCA of acute memory, latent memory, chronic memory, Intranasal Arm memory
+#DIFF1-6 : cluster 1-6 from surface stain clustering(CD27, CD127, CD62L, KLRG1)
+#TF1-6 : cluster 7-12 from transcription stain2 (EOMES, T-BET, pSTAT3, BLIMP1, BCL6)
+#ICS1-6: cluster 13-17 from cytokine stain (IFNg, TNFa, IL-2, CCL3)
+
+#install packages
+library(ggplot2)
+library(psych)
+library(rgl) #3d scatter plot
+
+#import the data
+setwd("")
+ALL <- read.csv(file="PCA_ARM_IN.csv", header= TRUE)
+
+#convert the values to percentages
+ALL[,1:17] <- ALL[,1:17] / 100
+
+#PCA using psych package
+ALL_no_label <- ALL[,-ncol(ALL)] #remove the infection label
+fa.parallel(ALL_no_label,fa="pc",n.iter=100,show.legend = FALSE,
+            main="screen plot with parallel analysis") #determine the number of PCs
+
+ALL_PCA<-principal(ALL_no_label,3) #PCA with 3 PCs
+print(ALL_PCA) #print the result
+ALL_pred <- as.data.frame(predict(ALL_PCA,ALL_no_label)) #using 2 PCs to represent the 9 variables of each mouse
+ALL_pred <- cbind(ALL_pred, infection = ALL$infection) #add back the infection label
+colnames(ALL_pred) <- c("PC1", "PC2","PC3", "infection")
+
+
+##3D plot of PCA using rgl
+#set the colors for different infections
+color <- c(rep("gray92",11),rep("gray54",6),rep("black",6),rep("brown",3),rep("yellow3",5))
+ALL_pred <- cbind(ALL_pred,color=color) #add color to the dataset
+plot3d(ALL_pred$PC1,ALL_pred$PC2,ALL_pred$PC3,size=15,axis=FALSE,col=ALL_pred$color,
+       xlab="PC1",ylab="PC2",zlab="PC3")
+
+rgl.snapshot("PCA_ARM_IN_1.png",fmt="png") #screenshot(Sup Figure 4)
+
+#create a blank plot
+plot(1, type="n", axes=F, xlab="", ylab="")
+#create a legend on the plot
+legend("topleft",pch=19, legend=c("Acute memory","Latent memory", "Chronic memory",
+                                  "Intranasal acute","Naive"), pt.cex=2,
+       col=c("gray92", "gray54", "black", "yellow3","brown"))

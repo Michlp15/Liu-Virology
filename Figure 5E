@@ -1,0 +1,57 @@
+##FlowSOM based analysis of memory cells#MYL
+##Figure 5E: Production of cytokines by acute, latent and chronic memory
+# Stain list:
+##CD8-PERCP, IL2-APC, TNFa-PECY7, IFNg-FITC, MIP1a-PE, CD90.1-PB
+
+#Install packages
+library(flowCore)
+library(flowTrans) #flow cytometry data transformation
+library(ggplot2) 
+library(plyr)
+library(tidyr)
+library(RColorBrewer)
+library(latticeExtra) ##3d barplot
+library(FlowSOM) #FlowSOM
+
+##set working directory
+setwd("")
+load("ics_memory.Rda")
+ALL <- ics_with_label[,c(-5,-6)] #take out mouse label and infection type for data transformation
+
+
+##Arcsinh Transformation
+ALL<-as.matrix(ALL)
+ALL<-flowFrame(ALL) #convert matrix to flow frame
+ALL_trans<-flowTrans(dat=ALL,fun="mclMultivArcSinh",colnames(ALL), n2f=FALSE,parameters.only = FALSE)
+ALL_after_transformation<-exprs(ALL_trans$result)
+ALL<-as.matrix(scale(ALL_after_transformation)) #scale the transformed data
+
+##FCS conversion for FlowSOM
+ALL_FCS <- flowFrame(ALL) # convert the pooled cells to FCS
+ALL_with_label <- cbind(as.data.frame(ALL),infection=as.data.frame(ics_with_label)[,6]) #add infection label back
+ARM <- ALL_with_label[ALL_with_label$infection == "ARM",][,-5] #extract acute memory data
+MHV <- ALL_with_label[ALL_with_label$infection == "MHV",][,-5] #extract latent memory data
+CL13 <- ALL_with_label[ALL_with_label$infection == "CL13",][,-5] #extract chronic memory data
+Naive <- ALL_with_label[ALL_with_label$infection == "Naive",][,-5] #extract naive data
+
+ARM_FCS <- flowFrame(as.matrix(ARM)) #convert data to FCS
+MHV_FCS <- flowFrame(as.matrix(MHV)) 
+CL13_FCS <- flowFrame(as.matrix(CL13)) 
+Naive_FCS <- flowFrame(as.matrix(Naive)) 
+
+#FlowSOM
+set.seed(1234)
+fSOM_ALL <- ReadInput(ALL_FCS,compensate = FALSE, transform = FALSE) #Read the pooled FCS into FlowSom
+fSOM_ALL <- BuildSOM(fSOM_ALL, xdim=4,ydim=4,rlen=100) #Build Self-Organizing Map(SOM)
+fSOM_ALL <- BuildMST(fSOM_ALL) #Build Minimal Spanning Tree(MST)
+PlotStars(fSOM_ALL, legend = FALSE) #Plot MST
+fSOM_ARM <- NewData(fSOM_ALL,ARM_FCS) #Map ARM data to the SOM grid (standard formed by total population) 
+PlotStars(fSOM_ARM, legend = FALSE)
+fSOM_MHV <- NewData(fSOM_ALL,MHV_FCS) #Map MHV data to the SOM grid (standard formed by total population)
+PlotStars(fSOM_MHV, legend = FALSE)
+fSOM_CL13 <- NewData(fSOM_ALL,CL13_FCS) #Map CL13 data to the SOM grid (standard formed by total population)
+PlotStars(fSOM_CL13, legend = FALSE)
+fSOM_Naive <- NewData(fSOM_ALL,Naive_FCS) #Map CL13 data to the SOM grid (standard formed by total population)
+PlotStars(fSOM_Naive, legend = FALSE)
+
+

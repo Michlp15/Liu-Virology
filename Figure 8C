@@ -1,0 +1,44 @@
+#Principal Component Analysis of polyclonal memory cells specific for different epitopes#MYL
+#Figure 8C
+##Primary memory of ARM, CL13 and MHV68 (GP33, GP276, NP396, P56, P79)
+#S1-S6 : cluster 1-6 from surface stain (CD27, CD127, CD62L, KLRG1)
+#I1-I5 : cluster 1-5 from cytokine stain (IFNg, TNFa, IL-2, CCL3)
+
+#install packages
+library(ggplot2)
+library(psych)
+library(rgl) #3d scatter plot
+
+#import the data
+setwd("")
+ALL <- read.csv(file="epitopes_pca.csv", header= TRUE)
+
+#convert the numbers to percentages
+ALL[,1:11] <- ALL[,1:11] / 100
+ALL_no_label <- ALL[,-ncol(ALL)] #remove the epitope label
+
+#PCA using psych package
+fa.parallel(ALL_no_label,fa="pc",n.iter=100,show.legend = FALSE,
+            main="screen plot with parallel analysis") #determine the number of PCs
+
+ALL_PCA<-principal(ALL_no_label,3) #PCA with 3 PCs
+print(ALL_PCA) #print the result
+ALL_pred <- as.data.frame(ALL_PCA$scores)##extract the converted value 
+ALL_pred <- cbind(ALL_pred, epitope = ALL$epitope) #add back the infection label
+colnames(ALL_pred) <- c("PC1", "PC2","PC3", "infection")
+
+
+##Plot the first 3 PCs using rgl
+##create color label
+color <- c(rep("deepskyblue",5),rep("royalblue1",5),rep("blue",5), #D35 ARM:GP276,GP33,NP396
+          rep("palegreen2",5),rep("darkgreen",5), #D43 MHV: P56, P79
+          rep("gray56",4),rep("gray37",4),rep("black",4), #D60 CL: GP276, GP33, NP396
+          rep("springgreen2",5),rep("green",5), #D70 MHV: P56, P79
+          rep("brown",4)) #NAIVE
+
+ALL_pred <- cbind(ALL_pred,color=color) #add color to the dataset
+plot3d(ALL_pred$PC1,ALL_pred$PC2,ALL_pred$PC3,size=15,axis=FALSE,col=ALL_pred$color,
+       xlab="PC1 38%",ylab="PC2 25%",zlab="PC3 24%") #3D scatter plot
+rgl.snapshot("PCA_epitope_1.png",fmt="png") 
+
+
